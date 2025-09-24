@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Đèn Trời Gửi Lời Yêu Thương</title>
+<style>
+  body {
+    margin: 0;
+    background: #020824;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
+  canvas {
+    display: block;
+  }
+  #wishBox {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ffffff;
+    border: 2px solid orange;
+    border-radius: 14px;
+    padding: 18px 24px;
+    max-width: 360px;
+    color: orange;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    display: none;
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+  }
+  #wishBox button {
+    margin-top: 12px;
+    padding: 6px 14px;
+    border: none;
+    background: orange;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div id="wishBox">
+  <div id="wishText"></div>
+  <button onclick="closeWish()">Đóng</button>
+</div>
+
+<script>
+const canvas = document.getElementById('sky');
+const ctx = canvas.getContext('2d');
+let W = window.innerWidth;
+let H = window.innerHeight;
+canvas.width = W;
+canvas.height = H;
+
+window.addEventListener('resize', ()=>{
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+});
+
+// Lời chúc
+const wishes = [
+  "Ước mong mọi người đều sum vầy và hạnh phúc đêm trung thu",
+  "Chúc bạn bình an và hạnh phúc như ánh trăng rằm",
+  "Mong tình bạn chúng ta luôn bền đẹp như ánh trăng",
+  "Chúc con đường của bạn rực rỡ như ánh đèn",
+  "Bạn cười đẹp lắm, hãy cười nhiều lên nhé",
+  "Nếu bạn buồn đừng lo có tôi ở đây rồi",
+  "Nếu bạn mệt hãy nói với tôi nhé"
+];
+
+// Vẽ sao
+const stars = [];
+for(let i=0;i<200;i++){
+  stars.push({
+    x: Math.random()*W,
+    y: Math.random()*H*0.8,
+    r: Math.random()*1.5+0.5,
+    alpha: Math.random(),
+    speed: Math.random()*0.02
+  });
+}
+function drawStars(){
+  for(const s of stars){
+    s.alpha += s.speed*(Math.random()<0.5?-1:1);
+    if(s.alpha<0.1) s.alpha=0.1;
+    if(s.alpha>1) s.alpha=1;
+    ctx.beginPath();
+    ctx.fillStyle=`rgba(255,255,255,${s.alpha})`;
+    ctx.arc(s.x,s.y,s.r,0,2*Math.PI);
+    ctx.fill();
+  }
+}
+
+// Vẽ mặt trăng
+function drawMoon(){
+  const r = 60;
+  ctx.save();
+  ctx.beginPath();
+  const grd = ctx.createRadialGradient(W-100,100,r*0.3, W-100,100,r);
+  grd.addColorStop(0,"#fff");
+  grd.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle = grd;
+  ctx.arc(W-100,100,r,0,2*Math.PI);
+  ctx.fill();
+  ctx.restore();
+}
+
+// Class Đèn trời
+class Lantern {
+  constructor(x,y,size,opacity){
+    this.x=x;
+    this.y=y;
+    this.size=size;
+    this.speed=0.2+Math.random()*0.4;
+    this.swing=Math.random()*0.02+0.01;
+    this.angle=Math.random()*Math.PI*2;
+    this.wish=wishes[Math.floor(Math.random()*wishes.length)];
+    this.opacity=opacity;
+  }
+  update(){
+    this.y -= this.speed;
+    this.angle += this.swing;
+    this.x += Math.sin(this.angle)*0.3;
+    if(this.y+this.size<0){
+      this.y=H+this.size;
+      this.x=Math.random()*W;
+    }
+  }
+  draw(ctx){
+    ctx.save();
+    ctx.translate(this.x,this.y);
+    ctx.globalAlpha=this.opacity;
+    const w=this.size*0.6;
+    const h=this.size*1.1;
+    const grd=ctx.createLinearGradient(0,-h/2,0,h/2);
+    grd.addColorStop(0,"#ffdd99");
+    grd.addColorStop(0.5,"#ff9933");
+    grd.addColorStop(1,"#cc3300");
+    ctx.fillStyle=grd;
+    ctx.beginPath();
+    ctx.moveTo(-w/2,-h/2+10);
+    ctx.quadraticCurveTo(-w/2,-h/2, -w/2+10,-h/2);
+    ctx.lineTo(w/2-10,-h/2);
+    ctx.quadraticCurveTo(w/2,-h/2,w/2,-h/2+10);
+    ctx.lineTo(w/2,h/2-10);
+    ctx.quadraticCurveTo(w/2,h/2,w/2-10,h/2);
+    ctx.lineTo(-w/2+10,h/2);
+    ctx.quadraticCurveTo(-w/2,h/2,-w/2,h/2-10);
+    ctx.closePath();
+    ctx.fill();
+    // Ánh sáng ở đáy
+    ctx.beginPath();
+    ctx.fillStyle="rgba(255,200,100,0.6)";
+    ctx.ellipse(0,h/2-5,w*0.3,w*0.2,0,0,2*Math.PI);
+    ctx.fill();
+    ctx.restore();
+  }
+  isHit(mx,my){
+    return Math.hypot(mx-this.x,my-this.y)<this.size*0.6;
+  }
+}
+
+// Sinh nhiều đèn
+const lanterns=[];
+for(let i=0;i<50;i++){
+  lanterns.push(new Lantern(
+    Math.random()*W,
+    Math.random()*H,
+    30+Math.random()*15,
+    0.5+Math.random()*0.5
+  ));
+}
+
+// Animation
+function animate(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle="#020824";
+  ctx.fillRect(0,0,W,H);
+  drawStars();
+  drawMoon();
+  for(const l of lanterns){
+    l.update();
+    l.draw(ctx);
+  }
+  requestAnimationFrame(animate);
+}
+animate();
+
+// Sự kiện click
+canvas.addEventListener('click',(e)=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left;
+  const my=e.clientY-rect.top;
+  for(const l of lanterns){
+    if(l.isHit(mx,my)){
+      openWish(l.wish);
+      break;
+    }
+  }
+});
+
+function openWish(text){
+  document.getElementById('wishText').innerText=text;
+  document.getElementById('wishBox').style.display='block';
+}
+function closeWish(){
+  document.getElementById('wishBox').style.display='none';
+}
+</script>
+</body>
+</html>
